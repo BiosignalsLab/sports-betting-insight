@@ -20,13 +20,13 @@ function printUsage(): void {
 ${chalk.bold("bip")} — Stage-based betting insight pipeline with adapters, caching, and CLI flow runner
 
 Usage:
-  npm run flow -- dataloader params
-  npm run flow -- dataloader odds-types
-  npm run flow -- dataloader training [--out dir] [--no-cache]
-  npm run flow -- bettor backtest [--out dir] [--no-cache]
-  npm run flow -- bettor bet [--no-cache]
-  npm run flow -- redis ping
-  npm run flow -- redis flush
+  npm run flow -- ingest manifest
+  npm run flow -- ingest sources
+  npm run flow -- ingest batch [--out dir] [--no-cache]
+  npm run flow -- evaluate walkforward [--out dir] [--no-cache]
+  npm run flow -- evaluate recommend [--no-cache]
+  npm run flow -- adapter ping
+  npm run flow -- adapter purge
 `);
 }
 
@@ -55,7 +55,7 @@ async function main(): Promise<void> {
   const outIdx = args.indexOf("--out");
   const outDir = outIdx >= 0 ? args[outIdx + 1] : null;
 
-  if (args[0] === "redis" && args[1] === "ping") {
+  if (args[0] === "adapter" && args[1] === "ping") {
     if (!isRedisEnabled()) {
       logger.info(chalk.yellow("Redis is disabled. Set REDIS_URL or REDIS_HOST to enable."));
       return;
@@ -65,23 +65,23 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (args[0] === "redis" && args[1] === "flush") {
+  if (args[0] === "adapter" && args[1] === "purge") {
     const removed = await cacheFlushNamespace();
     logger.info(chalk.green(`Flushed ${removed} Redis key(s) with bip prefix`));
     return;
   }
 
-  if (args[0] === "dataloader" && args[1] === "params") {
+  if (args[0] === "ingest" && args[1] === "manifest") {
     logger.info(JSON.stringify(MockSoccerAdapter.getAllParams(), null, 2));
     return;
   }
 
-  if (args[0] === "dataloader" && args[1] === "odds-types") {
+  if (args[0] === "ingest" && args[1] === "sources") {
     logger.info(JSON.stringify(dataloader.getOddsTypes(), null, 2));
     return;
   }
 
-  if (args[0] === "dataloader" && args[1] === "training") {
+  if (args[0] === "ingest" && args[1] === "batch") {
     const [X, Y, O] = dataloader.extractTrainData(0, "williamhill");
     if (outDir) {
       mkdirSync(outDir, { recursive: true });
@@ -95,7 +95,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (args[0] === "bettor" && args[1] === "backtest") {
+  if (args[0] === "evaluate" && args[1] === "walkforward") {
     const oddsType = "williamhill";
     const alpha = 0.03;
     const splits = 2;
@@ -135,7 +135,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (args[0] === "bettor" && args[1] === "bet") {
+  if (args[0] === "evaluate" && args[1] === "recommend") {
     const oddsType = "williamhill";
     const alpha = 0.03;
     const cacheKey = valueBetsCacheKey(oddsType, alpha);

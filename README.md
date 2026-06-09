@@ -1,21 +1,21 @@
-# betting-insight-pipeline
+# Betting Insight Pipeline (BIP)
 
-Stage-based betting insight pipeline with adapters, caching, and CLI flow runner
+Stage-based pipeline with adapters for data ingest, betting stages, and cache.
 
-## Commands
+## Stages
+
+1. **ingest** — `MockSoccerAdapter` / `LiveSoccerAdapter`
+2. **evaluate** — `OddsCompareStage`, `runBacktestStage`
+3. **adapter** — Redis + in-memory cache bridge
+
+## CLI
 
 ```bash
-npm run flow -- dataloader params
-npm run flow -- dataloader training
-npm run flow -- bettor backtest
-npm run flow -- bettor bet
-npm run flow -- redis ping
+npm run flow -- ingest manifest
+npm run flow -- ingest batch
+npm run flow -- evaluate walkforward
+npm run flow -- evaluate recommend
+npm run flow -- adapter ping
 ```
 
-## Redis
-
-Copy `.env.example` to `.env` and set `REDIS_URL` or `REDIS_HOST`. Cache prefix defaults to `bip:`.
-
-## Examples
-
-See `docs/` for worked examples.
+Contracts live in `contracts/`, shared utilities in `shared/`, orchestration in `cmd/flow.ts`.
