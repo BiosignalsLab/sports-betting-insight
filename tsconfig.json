@@ -21,7 +21,7 @@
     "stages/**/*.ts",
     "pipeline/**/*.ts",
     "cmd/**/*.ts",
-    "test/suite/**/*.test.ts/*.ts"
+    "test/suite/**/*.test.ts"
   ],
   "exclude": [
     "node_modules",
