@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { loadEnv } from "../shared/loadEnv.js";
+loadEnv();
+
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import chalk from "chalk";
@@ -14,12 +17,31 @@ import { backtestCacheKey, valueBetsCacheKey } from "../adapters/cache/keyBuilde
 import { cacheFlushNamespace, cacheGet, cacheSet } from "../adapters/cache/memoryRedis.js";
 import { closeRedisClient, isRedisEnabled, pingRedis } from "../adapters/cache/redisAdapter.js";
 import { ChronoSplit } from "../shared/chronoSplit.js";
+import { runMatchupFlow } from "../stages/predict/matchupFlow.js";
+import { llmConfigured, llmSetupHelp } from "../stages/predict/llmOutcomeStage.js";
+
+function getFlag(args: string[], flag: string): string | null {
+  const i = args.indexOf(flag);
+  return i >= 0 ? (args[i + 1] ?? null) : null;
+}
+
+function hasFlag(args: string[], flag: string): boolean {
+  return args.includes(flag);
+}
+
+function pct(n: number): string {
+  return `${(n * 100).toFixed(1)}%`;
+}
 
 function printUsage(): void {
   logger.info(`
-${chalk.bold("bip")} — Stage-based betting insight pipeline with adapters, caching, and CLI flow runner
+${chalk.bold("bip")} — Stage-based betting insight pipeline
 
-Usage:
+Primary workflow (AI matchup stages):
+  npm run flow -- evaluate matchup --home Arsenal --away Chelsea
+  npm run flow -- evaluate matchup Arsenal Chelsea --source mock --no-ai
+
+Other commands:
   npm run flow -- ingest manifest
   npm run flow -- ingest sources
   npm run flow -- ingest batch [--out dir] [--no-cache]
@@ -39,10 +61,6 @@ function tableToCsv(table: Table, name: string): string {
   return `# ${name}\n${header}\n${rows.join("\n")}\n`;
 }
 
-function hasFlag(args: string[], flag: string): boolean {
-  return args.includes(flag);
-}
-
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   if (args.length === 0) {
@@ -54,6 +72,43 @@ async function main(): Promise<void> {
   const dataloader = new MockSoccerAdapter();
   const outIdx = args.indexOf("--out");
   const outDir = outIdx >= 0 ? args[outIdx + 1] : null;
+
+  if (args[0] === "evaluate" && args[1] === "matchup") {
+    const home = getFlag(args, "--home") ?? args[2];
+    const away = getFlag(args, "--away") ?? args[3];
+    if (!home || !away) throw new Error("Usage: evaluate matchup --home TeamA --away TeamB");
+    const useAi = !hasFlag(args, "--no-ai");
+    if (useAi && !llmConfigured()) {
+      console.error(chalk.red(llmSetupHelp()));
+      process.exit(1);
+    }
+    const source = getFlag(args, "--source") === "mock" ? "mock" : "live";
+    const result = await runMatchupFlow({
+      homeTeam: home,
+      awayTeam: away,
+      source,
+      useAi,
+      league: getFlag(args, "--league") ?? undefined,
+      division: getFlag(args, "--division") ? Number(getFlag(args, "--division")) : undefined,
+      year: getFlag(args, "--year") ? Number(getFlag(args, "--year")) : undefined,
+    });
+    logger.info({
+      fixture: `${result.homeTeam} vs ${result.awayTeam}`,
+      homeWin: pct(result.homeWin),
+      draw: pct(result.draw),
+      awayWin: pct(result.awayWin),
+      confidence: pct(result.confidence),
+      engine: result.engine,
+      source: result.source,
+      samples: {
+        home: result.intel.homePlayed,
+        away: result.intel.awayPlayed,
+        h2h: result.intel.headToHead,
+      },
+      narrative: result.narrative,
+    });
+    return;
+  }
 
   if (args[0] === "adapter" && args[1] === "ping") {
     if (!isRedisEnabled()) {

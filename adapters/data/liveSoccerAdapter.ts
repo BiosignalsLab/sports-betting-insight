@@ -108,9 +108,10 @@ export class LiveSoccerAdapter extends BaseDataAdapter {
 
   async loadRemoteData(): Promise<Table> {
     if (this.cachedData) return this.cachedData;
-    const params = this.paramGrid_ ?? LiveSoccerAdapter.getFullParamGrid();
+    this.checkParamGrid();
+    const params = this.paramGrid_;
     const frames: Table[] = [];
-    for (const p of params.slice(0, 3)) {
+    for (const p of params) {
       const league = String(p.league ?? "England");
       const division = String(p.division ?? 1);
       const year = String(p.year ?? 2020);
