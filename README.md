@@ -14,14 +14,15 @@ Stage-based TypeScript pipeline for soccer betting research — ingest historica
 
 ## Quick start
 
-**Requirements:** Node.js 20+
+**Requirements:** Node.js 20+, `OPENAI_API_KEY` in `.env`
 
 ```bash
 npm install
-npm test
-npm run flow -- ingest manifest
-npm run flow -- evaluate recommend --no-cache
+cp .env.example .env   # add OPENAI_API_KEY
+npm run flow -- evaluate matchup --home Arsenal --away Chelsea
 ```
+
+Pipeline stages: **team intel → baseline → LLM outcome** (use `--no-ai` for baseline only).
 
 ## Architecture
 
