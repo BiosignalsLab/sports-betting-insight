@@ -1,3 +1,5 @@
+<img width="598" height="336" alt="download" src="https://github.com/user-attachments/assets/e91969c7-88d5-468d-9928-827bdd16602b" />
+
 # Sports Betting Insight Pipeline (BIP)
 
 Stage-based TypeScript pipeline for soccer betting research — ingest historical data, run walk-forward backtests, and surface value-bet recommendations. Uses adapter/stage vocabulary instead of traditional dataloader/bettor naming.
